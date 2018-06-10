@@ -150,7 +150,14 @@ var FirestoreBackup = exports.FirestoreBackup = function () {
       if ((0, _types.isDocumentPath)(this.options.databaseStartPath)) {
         var databaseDocument = this.options.database.doc(this.options.databaseStartPath);
         return databaseDocument.get().then(function (document) {
-          return _this.backupDocument(document, _this.options.backupPath + '/' + document.ref.path, '/');
+          var path = _this.options.backupPath + '/' + document.ref.path;
+          console.log('restoring document: '+ _this.options.restore);
+          if (_this.options.restore) {
+            console.log('restoring document');
+            return _this.restoreDocument(document, path, '/');
+          } else {
+            return _this.backupDocument(document, path, '/');
+          }
         });
       }
 
@@ -226,6 +233,53 @@ var FirestoreBackup = exports.FirestoreBackup = function () {
         _mkdirp2.default.sync(backupPath);
       } catch (error) {
         throw new Error('Unable to create backup path for Document \'' + document.id + '\': ' + error);
+      }
+
+      var fileContents = void 0;
+      try {
+        var documentData = document.data();
+        var keys = Object.keys(documentData);
+        var documentDataToStore = {};
+        documentDataToStore = Object.assign({}, constructDocumentValue(documentDataToStore, keys, documentData));
+        if (this.options.prettyPrintJSON === true) {
+          fileContents = (0, _jsonStableStringify2.default)(documentDataToStore, {space: 2});
+        } else {
+          fileContents = (0, _jsonStableStringify2.default)(documentDataToStore);
+        }
+      } catch (error) {
+        throw new Error('Unable to serialize Document \'' + document.id + '\': ' + error);
+      }
+      try {
+        _fs2.default.writeFileSync(backupPath + '/' + document.id + '.json', fileContents+"\n");
+      } catch (error) {
+        throw new Error('Unable to write Document \'' + document.id + '\': ' + error);
+      }
+
+      return document.ref.getCollections().then(function (collections) {
+        return (0, _utility.promiseParallel)(collections, function (collection) {
+          return _this4.backupCollection(collection, backupPath + '/' + collection.id, logPathWithDocument + '/');
+        }, _this4.documentRequestLimit);
+      });
+    }
+  }, {
+    key: 'restoreDocument',
+    value: function restoreDocument(document, backupPath, logPath) {
+      var _this4 = this;
+
+      var logPathWithDocument = logPath + document.id;
+      if (this.excludeByPattern('/' + document.ref.path)) {
+        console.log('Excluding Document \'' + logPathWithDocument + '\' (/' + document.ref.path + ')');
+        return Promise.resolve();
+      }
+      console.log('Restoring Document \'' + logPathWithDocument + '\'');
+
+      try {
+        var stat = _fs2.lstatSync(logPathWithDocument);
+        if (!stat.isFile) {
+          throw new Error('Unable to read file \'' + logPathWithDocument + '\' for Document \'' + document.id + '\': ' + error);
+        }
+      } catch (error) {
+        throw new Error('Unable to read file \'' + logPathWithDocument + '\' for Document \'' + document.id + '\': ' + error);
       }
 
       var fileContents = void 0;

@@ -30,6 +30,9 @@ var excludeParamDescription = 'Top level collection id(s) to exclude from backin
 var excludePatternParamKey = 'excludePattern'
 var excludePatternParamDescription = 'Documents and collections whose paths match the regex to exclude from backing up. Can be provided multiple times.'
 
+var restoreParamKey = 'restore';
+var restoreParamDescription = 'Restore backed-up files created by this tool.';
+
 const collectAllValues = (addValue/*: string */, toValues/*: Array<string> */)/*: Array<string> */ => {
   toValues.push(addValue)
   return toValues
@@ -42,6 +45,7 @@ commander.version('2.3.0')
   .option('-S, --' + databaseStartPathParamKey + ' <path>', databaseStartPathParamDescription)
   .option('-L, --' + requestCountLimitParamKey + ' <number>', requestCountLimitParamDescription)
   .option('-E, --' + excludeParamKey + ' <path>', excludeParamDescription, collectAllValues, [])
+  .option('-r, --' + restoreParamKey + ' <path>', restoreParamDescription)
   .option('--' + excludePatternParamKey + ' <regex>', excludePatternParamDescription, collectAllValues, [])
   .parse(process.argv)
 
@@ -75,6 +79,8 @@ const exclude = commander[excludeParamKey] || []
 
 const excludePatterns = commander[excludePatternParamKey].map(pattern => new RegExp(pattern)) || []
 
+const restore = commander[restoreParamKey] !== undefined && commander[restoreParamKey] !== null
+
 var firestoreBackup = require('../dist/index.js')
 try {
   console.time('backuptime')
@@ -85,7 +91,8 @@ try {
     prettyPrintJSON,
     requestCountLimit,
     exclude,
-    excludePatterns
+    excludePatterns,
+    restore
   })
     .then(() => {
       console.log(colors.bold(colors.green('All done 💫')))
