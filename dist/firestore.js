@@ -29,28 +29,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var constructReferenceUrl = exports.constructReferenceUrl = function constructReferenceUrl(reference) {
-  var referenceSegments = reference._referencePath.segments;
-  var referencePath = void 0;
-  if (Array.isArray(referenceSegments)) {
-    referencePath = referenceSegments.join('/');
-  } else if (typeof referenceSegments === 'string') {
-    referencePath = referenceSegments;
-  }
-
-  if (referencePath) {
-    return {
-      value: referencePath,
-      type: 'reference'
-    };
-  } else {
-    return {
-      value: reference,
-      type: 'unknown'
-    };
-  }
-};
-
 var testValidDocumentValue = function testValidDocumentValue(key, documentData, validators) {
   var validValue = void 0;
 
@@ -96,9 +74,10 @@ var constructDocumentValue = exports.constructDocumentValue = function construct
       if (_documentValue) {
         documentDataToStore = Object.assign({}, documentDataToStore, _defineProperty({}, key, _documentValue));
       } else {
-        var validValue = (0, _types.isReference)(documentData[key]);
+        var extendedTypeValidators = [_types.isReference, _types.isGeoPoint];
+        var validValue = testValidDocumentValue(key, documentData, extendedTypeValidators);
         if (validValue) {
-          documentDataToStore = Object.assign({}, documentDataToStore, _defineProperty({}, key, constructReferenceUrl(documentData[key])));
+          documentDataToStore = Object.assign({}, documentDataToStore, _defineProperty({}, key, validValue));
         } else {
           documentDataToStore = {
             value: documentData[key],

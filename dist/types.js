@@ -109,9 +109,16 @@ var isDate = exports.isDate = function isDate(value) {
 
 var isReference = exports.isReference = function isReference(value) {
   if (value && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && _typeof(value._firestore) === 'object' && _typeof(value._referencePath) === 'object') {
+    return constructReferenceUrl(value);
+  }
+  return false;
+};
+
+exports.isGeoPoint = function isGeoPoint(value) {
+  if (value && (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && value.constructor.name === 'GeoPoint') {
     return {
       value: value,
-      type: 'reference'
+      type: 'geopoint'
     };
   }
   return false;
@@ -143,4 +150,26 @@ var isCollectionPath = exports.isCollectionPath = function isCollectionPath(valu
     };
   }
   return false;
+};
+
+var constructReferenceUrl = exports.constructReferenceUrl = function constructReferenceUrl(reference) {
+  var referenceSegments = reference._referencePath.segments;
+  var referencePath = void 0;
+  if (Array.isArray(referenceSegments)) {
+    referencePath = referenceSegments.join('/');
+  } else if (typeof referenceSegments === 'string') {
+    referencePath = referenceSegments;
+  }
+
+  if (referencePath) {
+    return {
+      value: referencePath,
+      type: 'reference'
+    };
+  } else {
+    return {
+      value: reference,
+      type: 'unknown'
+    };
+  }
 };
